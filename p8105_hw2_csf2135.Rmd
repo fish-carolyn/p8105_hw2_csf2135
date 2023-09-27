@@ -16,27 +16,26 @@ This problem uses the `FiveThirtyEight` data; these data were gathered to create
 *Our goal is to merge these into a single data frame using year and month as keys across datasets.*
 
 First, clean the data in `pols-month.csv`. Use `separate()` to break up the variable mon into integer variables year, month, and day; replace month number with month name; create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
-
 ```{r}
-pols_month = read_csv("fivethirtyeight_datasets/pols-month.csv")
+pols_month_df = read_csv("fivethirtyeight_datasets/pols-month.csv")
 
-pols_month = pols_month |> 
+pols_month_df = pols_month_df |> 
   separate(mon, into = c("year","month","day"), "-") |> 
   mutate(
     month= case_match(
     month, 
-    "01" ~ "January", 
-    "02" ~ "February", 
-    "03" ~ "March", 
-    "04" ~ "April", 
+    "01" ~ "Jan", 
+    "02" ~ "Feb", 
+    "03" ~ "Mar", 
+    "04" ~ "Apr", 
     "05" ~ "May", 
-    "06" ~ "June", 
-    "07" ~ "July", 
-    "08" ~ "August", 
-    "09" ~ "September", 
-    "10" ~ "October", 
-    "11" ~ "November", 
-    "12" ~ "December"
+    "06" ~ "Jun", 
+    "07" ~ "Jul", 
+    "08" ~ "Aug", 
+    "09" ~ "Sep", 
+    "10" ~ "Oct", 
+    "11" ~ "Nov", 
+    "12" ~ "Dec"
   ), 
   president= case_when(
     prez_gop == 1 ~ "gop", 
@@ -46,39 +45,73 @@ pols_month = pols_month |>
 ```
 
 Second, clean the data in `snp.csv` using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
-
 ```{r}
-snp = read_csv("fivethirtyeight_datasets/snp.csv")
+snp_df = read_csv("fivethirtyeight_datasets/snp.csv")
 
-snp = snp |> 
+snp_df = snp_df |> 
   separate(date, into = c("month", "day", "year"), "/") |> 
   mutate(
     month= case_match(
     month, 
-    "1" ~ "January", 
-    "2" ~ "February", 
-    "3" ~ "March", 
-    "4" ~ "April", 
+    "1" ~ "Jan", 
+    "2" ~ "Feb", 
+    "3" ~ "Mar", 
+    "4" ~ "Apr", 
     "5" ~ "May", 
-    "6" ~ "June", 
-    "7" ~ "July", 
-    "8" ~ "August", 
-    "9" ~ "September", 
-    "10" ~ "October", 
-    "11" ~ "November", 
-    "12" ~ "December"
+    "6" ~ "Jun", 
+    "7" ~ "Jul", 
+    "8" ~ "Aug", 
+    "9" ~ "Sep", 
+    "10" ~ "Oct", 
+    "11" ~ "Nov", 
+    "12" ~ "Dec"
+  ),
+  year= case_when(
+    year <16 ~ paste0("20",year), 
+    year >=16 ~ paste0("19", year)
   )) |> 
-  reorder(year, month)
+  relocate(year, month)
 ```
 
-
 Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
+```{r}
+unemployment_df <- read_csv("fivethirtyeight_datasets/unemployment.csv", 
+                            col_types = cols(Year = col_character()))
+
+unemployment_df= unemployment_df |> 
+  pivot_longer(
+    Jan:Dec, 
+    names_to ="month", 
+    values_to = "rate_unemployment"
+  ) |> 
+  relocate(year= Year, month)
+
+```
 
 Join the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
+```{r}
+joined_df= left_join(pols_month_df, snp_df, by=c("year", "month")) |> 
+  left_join(unemployment_df, by=c("year", "month"))
+```
 
 Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
 
-Note: we could have used a date variable as a key instead of creating year and month keys; doing so would help with some kinds of plotting, and be a more accurate representation of the data. Date formats are tricky, though. For more information check out the lubridate package in the tidyverse.
+The final data set `joined_df` contains information about the number of politicians per party, market performance, and unemployment rate per month for the years 1947-2015. The final data set contains `r ncol(joined_df)` variables and `r nrow(joined_df)` rows. This data set was created by joining `pols.csv` data which includes data for the number of governors per party (`gov_gop`, `gov_dem`), number of representatives per party (`rep_gov`, `rep_dem`), number of senators per party (`sen_gop`, `sen_dem`), and the party affiliation of the president (`president`) for the years 1947-2015. `pols.csv` has `r ncol(pols_month)` variables and `r nrow(pols_month)` rows. The `snp.csv` data was also joined, which includes S&P index (`close`) to track stock market performance per day from January 1950- July 2015. `snp.csv` has `r ncol(pols_month)` variables and `r nrow(pols_month)` rows. The third data set used to make the final data set was the `unemployment.csv` which contains monthly national unemployment rate (`rate_unemployment`) for 1948- 2015. `unemployment.csv` has `r ncol(unemployment_df)` variables and `r nrow(unemployment_df)` rows. The three datasets were joined by `month` and `year`to create the final dataset. 
+
+## Problem 2
+This problem uses the Mr. Trash Wheel dataset, available as an Excel file on the course website.
+
+Read and clean the Mr. Trash Wheel sheet:
+
+specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
+use reasonable variable names
+omit rows that do not include dumpster-specific data
+The data include a column for the (approximate) number of homes powered. This calculation is described in the Homes powered note, but not applied to every row in the dataset. Update the data to include a new homes_powered variable based on this calculation.
+
+Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to all datasets before combining.
+
+Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. For available data, what was the total weight of trash collected by Professor Trash Wheel? What was the total number of cigarette butts collected by Gwynnda in July of 2021?
+
 
 
 ```{r}
