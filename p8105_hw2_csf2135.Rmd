@@ -1,0 +1,89 @@
+---
+title: "P8105_Homework 2"
+author: "UNI: csf2135"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(moderndive)
+library(tidyverse)
+```
+
+### Problem 1
+This problem uses the `FiveThirtyEight` data; these data were gathered to create the interactive graphic on this page. In particular, we’ll use the data in `pols-month.csv`, `unemployment.csv`, and `snp.csv`. 
+
+*Our goal is to merge these into a single data frame using year and month as keys across datasets.*
+
+First, clean the data in `pols-month.csv`. Use `separate()` to break up the variable mon into integer variables year, month, and day; replace month number with month name; create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
+
+```{r}
+pols_month = read_csv("fivethirtyeight_datasets/pols-month.csv")
+
+pols_month = pols_month |> 
+  separate(mon, into = c("year","month","day"), "-") |> 
+  mutate(
+    month= case_match(
+    month, 
+    "01" ~ "January", 
+    "02" ~ "February", 
+    "03" ~ "March", 
+    "04" ~ "April", 
+    "05" ~ "May", 
+    "06" ~ "June", 
+    "07" ~ "July", 
+    "08" ~ "August", 
+    "09" ~ "September", 
+    "10" ~ "October", 
+    "11" ~ "November", 
+    "12" ~ "December"
+  ), 
+  president= case_when(
+    prez_gop == 1 ~ "gop", 
+    prez_dem == 1 ~ "dem"
+  )) |> 
+  select(-prez_gop, -prez_dem, -day)
+```
+
+Second, clean the data in `snp.csv` using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
+
+```{r}
+snp = read_csv("fivethirtyeight_datasets/snp.csv")
+
+snp = snp |> 
+  separate(date, into = c("month", "day", "year"), "/") |> 
+  mutate(
+    month= case_match(
+    month, 
+    "1" ~ "January", 
+    "2" ~ "February", 
+    "3" ~ "March", 
+    "4" ~ "April", 
+    "5" ~ "May", 
+    "6" ~ "June", 
+    "7" ~ "July", 
+    "8" ~ "August", 
+    "9" ~ "September", 
+    "10" ~ "October", 
+    "11" ~ "November", 
+    "12" ~ "December"
+  )) |> 
+  reorder(year, month)
+```
+
+
+Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
+
+Join the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
+
+Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
+
+Note: we could have used a date variable as a key instead of creating year and month keys; doing so would help with some kinds of plotting, and be a more accurate representation of the data. Date formats are tricky, though. For more information check out the lubridate package in the tidyverse.
+
+
+```{r}
+
+ 
+```
+
+
