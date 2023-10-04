@@ -6,42 +6,51 @@ output: github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
-library(moderndive)
+library(readxl)
 library(tidyverse)
 ```
 
-### Problem 1
-This problem uses the `FiveThirtyEight` data; these data were gathered to create the interactive graphic on this page. In particular, we’ll use the data in `pols-month.csv`, `unemployment.csv`, and `snp.csv`. 
+### Problem 1: Carolyn's Way 
 
 **Our goal is to merge these into a single data frame using year and month as keys across datasets.**
 
-First, clean the data in `pols-month.csv`. Use `separate()` to break up the variable mon into integer variables year, month, and day; replace month number with month name; create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
+First, clean the data in `pols-month.csv`. 
+
+  * Use `separate()` to break up the variable mon into integer variables year, month, and day; 
+  * replace month number with month name; 
+  * create a president variable taking values gop and dem, and remove prez_dem and prez_gop; 
+  * and remove the day variable.
 ```{r, message=FALSE, echo=TRUE}
 pols_month_df = read_csv("fivethirtyeight_datasets/pols-month.csv")
 
 pols_month_df = pols_month_df |> 
   separate(mon, into = c("year","month","day"), "-") |> 
   mutate(
-    month= case_match(
+    month= as.numeric(month)
+    )|> 
+  mutate(
+    month_abb= case_match(
     month, 
-    "01" ~ "Jan", 
-    "02" ~ "Feb", 
-    "03" ~ "Mar", 
-    "04" ~ "Apr", 
-    "05" ~ "May", 
-    "06" ~ "Jun", 
-    "07" ~ "Jul", 
-    "08" ~ "Aug", 
-    "09" ~ "Sep", 
-    "10" ~ "Oct", 
-    "11" ~ "Nov", 
-    "12" ~ "Dec"
+    1 ~ "Jan", 
+    2 ~ "Feb", 
+    3 ~ "Mar", 
+    4 ~ "Apr", 
+    5 ~ "May", 
+    6 ~ "Jun", 
+    7 ~ "Jul", 
+    8 ~ "Aug", 
+    9 ~ "Sep", 
+    10 ~ "Oct", 
+    11 ~ "Nov", 
+    12 ~ "Dec"
   ), 
   president= case_when(
     prez_gop == 1 ~ "gop", 
+    prez_gop == 2 ~ "gop", 
     prez_dem == 1 ~ "dem"
   )) |> 
-  select(-prez_gop, -prez_dem, -day)
+  select(-prez_gop, -prez_dem, -day) |> 
+  relocate(year, month_abb)
 ```
 
 Second, clean the data in `snp.csv` using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
@@ -51,26 +60,29 @@ snp_df = read_csv("fivethirtyeight_datasets/snp.csv")
 snp_df = snp_df |> 
   separate(date, into = c("month", "day", "year"), "/") |> 
   mutate(
-    month= case_match(
+    month= as.numeric(month)
+    )|> 
+  mutate(
+    month_abb= case_match(
     month, 
-    "1" ~ "Jan", 
-    "2" ~ "Feb", 
-    "3" ~ "Mar", 
-    "4" ~ "Apr", 
-    "5" ~ "May", 
-    "6" ~ "Jun", 
-    "7" ~ "Jul", 
-    "8" ~ "Aug", 
-    "9" ~ "Sep", 
-    "10" ~ "Oct", 
-    "11" ~ "Nov", 
-    "12" ~ "Dec"
-  ),
+    1 ~ "Jan", 
+    2 ~ "Feb", 
+    3 ~ "Mar", 
+    4 ~ "Apr", 
+    5 ~ "May", 
+    6 ~ "Jun", 
+    7 ~ "Jul", 
+    8 ~ "Aug", 
+    9 ~ "Sep", 
+    10 ~ "Oct", 
+    11 ~ "Nov", 
+    12 ~ "Dec"
+  ), 
   year= case_when(
     year <16 ~ paste0("20",year), 
     year >=16 ~ paste0("19", year)
   )) |> 
-  relocate(year, month)
+  relocate(year, month_abb)
 ```
 
 Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
@@ -81,22 +93,86 @@ unemployment_df <- read_csv("fivethirtyeight_datasets/unemployment.csv",
 unemployment_df= unemployment_df |> 
   pivot_longer(
     Jan:Dec, 
-    names_to ="month", 
+    names_to ="month_abb", 
     values_to = "rate_unemployment"
   ) |> 
-  relocate(year= Year, month)
+  relocate(year= Year, month_abb)
 
 ```
 
 Join the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
 ```{r, message=FALSE, echo=TRUE}
-joined_df= left_join(pols_month_df, snp_df, by=c("year", "month")) |> 
-  left_join(unemployment_df, by=c("year", "month"))
+joined_df= left_join(pols_month_df, snp_df, by=c("year", "month_abb")) |> 
+  left_join(unemployment_df, by=c("year", "month_abb"))
 ```
 
 Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
 
-The final data set `joined_df` contains information about the number of politicians per party, market performance, and unemployment rate per month for the years 1947-2015. The final data set contains `r ncol(joined_df)` variables and `r nrow(joined_df)` rows. This data set was created by joining `pols-month.csv` data which includes data for the number of governors per party (`gov_gop`, `gov_dem`), number of representatives per party (`rep_gov`, `rep_dem`), number of senators per party (`sen_gop`, `sen_dem`), and the party affiliation of the president (`president`) for the years 1947-2015. `pols.csv` has `r ncol(pols_month_df)` variables and `r nrow(pols_month_df)` rows. The `snp.csv` data was also joined, which includes S&P index (`close`) to track stock market performance per day from January 1950- July 2015. `snp.csv` has `r ncol(snp_df)` variables and `r nrow(snp_df)` rows. The third data set used to make the final data set was the `unemployment.csv` which contains monthly national unemployment rate (`rate_unemployment`) for 1948- 2015. `unemployment.csv` has `r ncol(unemployment_df)` variables and `r nrow(unemployment_df)` rows. The three datasets were joined by `month` and `year`to create the final dataset. 
+_The final data set `joined_df` contains information about the number of politicians per party, market performance, and unemployment rate per month for the years 1947-2015. The final data set contains `r ncol(joined_df)` variables and `r nrow(joined_df)` rows. This data set was created by joining `pols-month.csv` data which includes data for the number of governors per party (`gov_gop`, `gov_dem`), number of representatives per party (`rep_gov`, `rep_dem`), number of senators per party (`sen_gop`, `sen_dem`), and the party affiliation of the president (`president`) for the years 1947-2015. `pols.csv` has `r ncol(pols_month_df)` variables and `r nrow(pols_month_df)` rows. The `snp.csv` data was also joined, which includes S&P index (`close`) to track stock market performance per day from January 1950- July 2015. `snp.csv` has `r ncol(snp_df)` variables and `r nrow(snp_df)` rows. The third data set used to make the final data set was the `unemployment.csv` which contains monthly national unemployment rate (`rate_unemployment`) for 1948- 2015. `unemployment.csv` has `r ncol(unemployment_df)` variables and `r nrow(unemployment_df)` rows. The three datasets were joined by `month` and `year`to create the final dataset._
+
+
+
+### Problem 1: Posted solution
+
+We clean the 538 `pols` data, which provides information on the number of national politicians who are democratic or republican at any given time. There are some values for which `prez_gop` is `2` -- these are months in which Ford became President following Nixon's resignation. In the new `president` variable created as part of our data cleaning, we code these as `gop` (same as values when `prez_gop` is `1`).
+
+```{r clean_538_pols}
+month_df = 
+  tibble(
+    month_num = 1:12,
+    month_abb = month.abb,
+    month = month.name
+  )
+
+pols = 
+  read_csv("fivethirtyeight_datasets/pols-month.csv") |>
+  separate(mon, into = c("year", "month_num", "day"), convert = TRUE) |>
+  mutate(
+    president = recode(prez_gop, "0" = "dem", "1" = "gop", "2" = "gop")) |>
+  left_join(x = _, y = month_df) |> 
+  select(year, month, everything(), -day, -starts_with("prez")) 
+```
+
+We also clean the 538 `snp` data, which contains information related to Standard & Poor’s stock market index.
+
+```{r clean_538_snp}
+snp = 
+  read_csv("fivethirtyeight_datasets/snp.csv") |>
+  separate(date, into = c("month", "day", "year"), convert = TRUE) |>
+  arrange(year, month) |>
+  mutate(month = month.name[month]) |>
+  select(year, month, close) 
+```
+
+Finally, we tidy the `unemployment` data so that it can be merged with the `pols` and `snp` datasets.
+
+```{r clean_538_unemp}
+unemployment = 
+  read_csv("fivethirtyeight_datasets/unemployment.csv") |>
+  rename(year = Year) |>
+  pivot_longer(
+    Jan:Dec, 
+    names_to = "month_abb",
+    values_to = "unemployment"
+  ) |> 
+  left_join(x = _, y = month_df) |> 
+  select(year, month, unemployment)
+```
+
+Now we merge the three datasets!
+
+```{r merge_538}
+data_538 = 
+  left_join(pols, snp) |>
+  left_join(x = _, y = unemployment)
+
+str(data_538)
+```
+
+Notice that there are some `NA` values in the `close` and `unemployment` variables, which indicate that the value of these variables is missing at those locations.
+
+Let's talk about the 538 datasets. The `pols` data has `r nrow(pols)` observations and `r ncol(pols)` variables and tells us about the party affiliation distribution (democrat or republican) for governors and senators for a given year from years `r range(pols$year)[1]` to `r range(pols$year)[2]`. It also tells us whether the sitting president was a democrat or republican. The `snp` data has `r nrow(snp)` observations and `r ncol(snp)` variables, ranging from years `r range(snp$year)[1]` to `r range(snp$year)[2]`. The `unemployment` data has `r nrow(unemployment)` observations and `r ncol(unemployment)` variables ranging from years `r range(unemployment$year)[1]` to `r range(unemployment$year)[2]`. In Januarys in or after 1975 in which a democrat was president, the **average unemployment rate was `r filter(data_538, month == "January", year >= 1975, president == "dem") |> pull(unemployment) |> mean() |> round(2)`**.  The average unemployment rate over the same time period in which a republican was president was `r filter(data_538, month == "January", year >= 1975, president == "gop") |> pull(unemployment) |> mean() |> round(2)`.
+
 
 ## Problem 2
 This problem uses the Mr. Trash Wheel dataset, available as an Excel file on the course website.
@@ -111,7 +187,7 @@ use reasonable variable names
 
 _Homes Powered - Each ton of trash equates to on average 500 kilowatts of electricity.  An average household will use 30 kilowatts per day._
 
-Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to all datasets before combining.
+
 ```{r, message=FALSE, echo=TRUE}
 mr_trash_df= readxl::read_excel("202207 Trash Wheel Collection Data.xlsx", 
                                 sheet = "Mr. Trash Wheel", 
@@ -120,16 +196,20 @@ mr_trash_df= readxl::read_excel("202207 Trash Wheel Collection Data.xlsx",
   mutate(
     year= as.numeric(year), 
     homes_powered = (weight_tons * 500)/30, 
-    dumpster_name= "Mr. Trash"
+    dumpster_name= "Mr. Trash Wheel"
     )
+```
 
+Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. To keep track of which Trash Wheel is which, you may need to add an additional variable to all datasets before combining.
+
+```{r, message=FALSE, echo=TRUE}
 prof_trash_df <- readxl::read_excel("202207 Trash Wheel Collection Data.xlsx", 
                                   sheet = "Professor Trash Wheel", 
                                   range = "A2:M96") |> 
   janitor::clean_names() |> 
   mutate(
     homes_powered = (weight_tons * 500)/30, 
-    dumpster_name = "Prof. Trash"
+    dumpster_name = "Prof. Trash Wheel"
   )
 
 gwynnda_df <- readxl::read_excel("202207 Trash Wheel Collection Data.xlsx", 
@@ -138,22 +218,38 @@ gwynnda_df <- readxl::read_excel("202207 Trash Wheel Collection Data.xlsx",
   janitor::clean_names() |> 
   mutate(
     homes_powered = (weight_tons * 500) / 30, 
-    dumpster_name = "Gwynnda"  
+    dumpster_name = "Gwynnda Trash Wheel"  
   )
 
-
-all_trash= bind_rows(mr_trash_df, prof_trash_df, gwynnda_df)
+all_trash= bind_rows(mr_trash_df, prof_trash_df, gwynnda_df) |> 
+  relocate(dumpster_name, dumpster, month, year, date)
 ```
+
+
+_Upon inspecting full `all_trash` dataset, it was observed that one data observation was miscoded. For Mr. Trash Wheel dumpster 383 (January 2020) the date shown in data is "1900-01-20"). Will replace the year of this date with 2020 and I should follow-up to cross check trash collection days for Mr. Trash Wheel to ensure the month and day have been entered correctly._
+```{r, message=FALSE, echo=TRUE}
+
+all_trash <- all_trash |> 
+  mutate(date = if_else((dumpster == 383 & year == 2020),
+                        paste0(as.Date("2020-01-20")), paste0(date))) 
+
+```
+
 
 Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. 
 
+_The `all_trash` data set contains information about the types of trash collected, total weight of trash in tons collected (`weight_tons`), and an approximate value for number of homes powered by trash collection (`homes_powered`) for the trash wheels: `r unique(all_trash$dumpster_name)`. The dataset contains trash collection data for `r min(all_trash$date)` through `r max(all_trash$date)`. There are `r ncol(all_trash)` variables and `r nrow(all_trash)` observations._
+
+_Note that plastic bag collection data is only reported for Gwynnda Trash Wheel. Glass bottle, grocery bag, and chip bag collection data are reported for Mr. Trash Wheel and Professor Trash Well. Sports ball collection data are reported for Mr. Trash only._
+
 For available data, what was the total weight of trash collected by Professor Trash Wheel? 
+
+_The total weight of trash collected by Professor Trash Wheel was `r filter(all_trash, dumpster_name == "Prof. Trash Wheel") |> round(sum(weight_tons), digits =2)` tons._
 
 What was the total number of cigarette butts collected by Gwynnda in July of 2021?
 
-```{r, message=FALSE, echo=TRUE}
+_In July of 2021. Gwynnda collected `r filter(all_trash, dumpster_name == "Gwynnda Trash Wheel", month == "July", year == 2021) |> round(sum(cigarette_butts), digits =2)` cigarette butts._
 
-```
 
 ## Problem 3
 
@@ -162,9 +258,29 @@ This problem uses data collected in an observational study to understand the tra
 Basic demographic information were measured at the study baseline. The study monitored the development of MCI and recorded the age of MCI onset during the follow-up period, with the last visit marking the end of follow-up. APOE4 is a variant of the apolipoprotein E gene, significantly associated with a higher risk of developing Alzheimer’s disease. The amyloid β
  42/40 ratio holds significant promise for diagnosing and predicting disease outcomes. This ratio undergoes changes over time and has been linked to the manifestation of clinical symptoms of Alzheimer’s disease.
 
-Import, clean, and tidy the dataset of baseline demographics. Ensure that sex and APOE4 carrier status are appropriate encoded (i.e. not numeric), and remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline). Discuss important steps in the import process and relevant features of the dataset. How many participants were recruited, and of these how many develop MCI? What is the average baseline age? What proportion of women in the study are APOE4 carriers?
+Import, clean, and tidy the dataset of baseline demographics. 
+
+  * Ensure that sex and APOE4 carrier status are appropriate encoded (i.e. not numeric), 
+  * and remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline). 
+```{r, message=FALSE}
+
+baseline_df <- read_csv("data_mci/MCI_baseline.csv", skip = 1) |> 
+  janitor::clean_names() |> 
+  case_match(sex, 1 ~ "Male", 0 ~ "Female") |>  
+  recode (apoe4, 1 ~ "apoe4 carrier", 0 ~ "apoe4 non-carrier") |> 
+  filter(current_age != age_at_onset
+  )
+```
+
+
+
+Discuss important steps in the import process and relevant features of the dataset. How many participants were recruited, and of these how many develop MCI? What is the average baseline age? What proportion of women in the study are APOE4 carriers?
 
 Similarly, import, clean, and tidy the dataset of longitudinally observed biomarker values; comment on the steps on the import process and the features of the dataset.
+```{r}
+amyloid_df <- read_csv("data_mci/mci_amyloid.csv", skip = 1)
+```
+
 
 Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
 
