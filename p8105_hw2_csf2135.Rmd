@@ -266,23 +266,37 @@ Import, clean, and tidy the dataset of baseline demographics.
 
 baseline_df <- read_csv("data_mci/MCI_baseline.csv", skip = 1) |> 
   janitor::clean_names() |> 
-  case_match(sex, 1 ~ "Male", 0 ~ "Female") |>  
-  recode (apoe4, 1 ~ "apoe4 carrier", 0 ~ "apoe4 non-carrier") |> 
-  filter(current_age != age_at_onset
-  )
+  rename(study_id = id) |> 
+  mutate(sex = case_when(
+    sex == 1 ~ "Male", 
+    sex == 0 ~ "Female"
+  )) |>  
+  mutate(apoe4 = case_when(
+    apoe4 == 1 ~ "apoe4 carrier", 
+    apoe4 == 0 ~ "apoe4 non-carrier"
+  )) |> 
+  filter(current_age != age_at_onset)
 ```
-
-
 
 Discuss important steps in the import process and relevant features of the dataset. How many participants were recruited, and of these how many develop MCI? What is the average baseline age? What proportion of women in the study are APOE4 carriers?
 
 Similarly, import, clean, and tidy the dataset of longitudinally observed biomarker values; comment on the steps on the import process and the features of the dataset.
 ```{r}
-amyloid_df <- read_csv("data_mci/mci_amyloid.csv", skip = 1)
+amyloid_df <- read_csv("data_mci/mci_amyloid.csv", skip = 1) |> 
+  janitor::clean_names() 
 ```
 
 
 Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
+
+return all rows from x without a match in y...
+```{r}
+test<- anti_join(baseline_df, amyloid_df, by=c("study_id"))
+
+test2<- anti_join(amyloid_df, baseline_df, by=c("study_id"))
+
+```
+
 
 
 
