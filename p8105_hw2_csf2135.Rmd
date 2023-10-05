@@ -106,7 +106,7 @@ joined_df= left_join(pols_month_df, snp_df, by=c("year", "month_abb")) |>
   left_join(unemployment_df, by=c("year", "month_abb"))
 ```
 
-*Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).*
+**Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).**
 
 _The final data set `joined_df` contains information about the number of politicians per party, market performance, and unemployment rate per month for the years 1947-2015. The final data set contains `r ncol(joined_df)` variables and `r nrow(joined_df)` rows. This data set was created by joining `pols-month.csv` data which includes data for the number of governors per party (`gov_gop`, `gov_dem`), number of representatives per party (`rep_gov`, `rep_dem`), number of senators per party (`sen_gop`, `sen_dem`), and the party affiliation of the president (`president`) for the years 1947-2015. `pols.csv` has `r ncol(pols_month_df)` variables and `r nrow(pols_month_df)` rows. The `snp.csv` data was also joined, which includes S&P index (`close`) to track stock market performance per day from January 1950- July 2015. `snp.csv` has `r ncol(snp_df)` variables and `r nrow(snp_df)` rows. The third data set used to make the final data set was the `unemployment.csv` which contains monthly national unemployment rate (`rate_unemployment`) for 1948- 2015. `unemployment.csv` has `r ncol(unemployment_df)` variables and `r nrow(unemployment_df)` rows. The three datasets were joined by `month` and `year`to create the final dataset._
 
@@ -175,7 +175,7 @@ Let's talk about the 538 datasets. The `pols` data has `r nrow(pols)` observatio
 
 
 ## Problem 2
-Read and clean the Mr. Trash Wheel sheet:
+**Read and clean the Mr. Trash Wheel sheet:**
 
   * specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
   * use reasonable variable names
@@ -185,7 +185,7 @@ Read and clean the Mr. Trash Wheel sheet:
 _Homes Powered - Each ton of trash equates to on average 500 kilowatts of electricity.  An average household will use 30 kilowatts per day._
 
 
-```{r, message=FALSE, echo=TRUE}
+```{r clean_mrtrash, message=FALSE, echo=TRUE}
 mr_trash_df= readxl::read_excel("202207 Trash Wheel Collection Data.xlsx", 
                                 sheet = "Mr. Trash Wheel", 
                                 range = "A2:N549") |> 
@@ -197,9 +197,9 @@ mr_trash_df= readxl::read_excel("202207 Trash Wheel Collection Data.xlsx",
     )
 ```
 
-Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset. 
+**Use a similar process to import, clean, and organize the data for Professor Trash Wheel and Gwynnda, and combine these with the Mr. Trash Wheel dataset to produce a single tidy dataset.**
 
-```{r, message=FALSE, echo=TRUE}
+```{r clean_prof_gwyn, message=FALSE, echo=TRUE}
 prof_trash_df <- readxl::read_excel("202207 Trash Wheel Collection Data.xlsx", 
                                   sheet = "Professor Trash Wheel", 
                                   range = "A2:M96") |> 
@@ -224,7 +224,7 @@ all_trash= bind_rows(mr_trash_df, prof_trash_df, gwynnda_df) |>
 
 
 _Upon inspecting full `all_trash` dataset, it was observed that one data observation was miscoded. For Mr. Trash Wheel dumpster 383 (January 2020) the date shown in data is "1900-01-20"). Will replace the year of this date with 2020 and I should follow-up to cross check trash collection days for Mr. Trash Wheel to ensure the month and day have been entered correctly._
-```{r, message=FALSE, echo=TRUE}
+```{r merge_trash, message=FALSE, echo=TRUE}
 
 all_trash <- all_trash |> 
   mutate(date = if_else((dumpster == 383 & year == 2020),
@@ -232,36 +232,33 @@ all_trash <- all_trash |>
 
 ```
 
-*Write a paragraph about these data. Be sure to note the number of observations in the resulting dataset, and give examples of key variables.*
+**Write a paragraph about these data. Be sure to note the number of observations in the resulting dataset, and give examples of key variables.**
 
 _The `all_trash` data set contains information about the types of trash collected, total weight of trash in tons collected (`weight_tons`), and an approximate value for number of homes powered by trash collection (`homes_powered`) for the trash wheels: `r unique(all_trash$dumpster_name)`. The dataset contains trash collection data for `r min(all_trash$date)` through `r max(all_trash$date)`. There are `r ncol(all_trash)` variables and `r nrow(all_trash)` observations._
 
 _Note that plastic bag collection data are only reported for Gwynnda Trash Wheel. Glass bottle, grocery bag, and chip bag collection data are reported for Mr. Trash Wheel and Professor Trash Well. Sports ball collection data are reported for Mr. Trash only._
 
-*For available data, what was the total weight of trash collected by Professor Trash Wheel?*
+**For available data, what was the total weight of trash collected by Professor Trash Wheel?**
 
 _The total weight of trash collected by Professor Trash Wheel was `r sum(filter(all_trash, dumpster_name == "Prof. Trash Wheel")  |>  pull(weight_tons))` tons._
 
 
-*What was the total number of cigarette butts collected by Gwynnda in July of 2021?*
+**What was the total number of cigarette butts collected by Gwynnda in July of 2021?**
 
 _In July of 2021. Gwynnda collected In July of 2021, Gwynnda collected `r as.integer(sum(filter(all_trash, dumpster_name == "Gwynnda Trash Wheel" & month == "July" & year == 2021)  |>  pull(cigarette_butts)))` cigarette butts._
 
 
 ## Problem 3
 
-This problem uses data collected in an observational study to understand the trajectory of Alzheimer’s disease (AD) biomarkers. Study participants were free of Mild Cognitive Impairment (MCI), a stage between the expected cognitive decline of normal aging and the more serious decline of dementia, at the study baseline.
-
-Basic demographic information were measured at the study baseline. The study monitored the development of MCI and recorded the age of MCI onset during the follow-up period, with the last visit marking the end of follow-up. APOE4 is a variant of the apolipoprotein E gene, significantly associated with a higher risk of developing Alzheimer’s disease. The amyloid β 42/40 ratio holds significant promise for diagnosing and predicting disease outcomes. This ratio undergoes changes over time and has been linked to the manifestation of clinical symptoms of Alzheimer’s disease.
-
-Import, clean, and tidy the dataset of baseline demographics. 
+**Import, clean, and tidy the dataset of baseline demographics.**
 
   * Ensure that sex and APOE4 carrier status are appropriate encoded (i.e. not numeric), 
-  * and remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline). 
-```{r clean_baseline, message=FALSE}
+  * remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline). 
+```{r clean_baseline, message=FALSE, echo=TRUE}
 baseline_df <- read_csv("data_mci/MCI_baseline.csv", skip = 1) |> 
   janitor::clean_names() |> 
-  rename(study_id = id) |> 
+  rename(study_id = id, 
+         baseline_age = current_age) |> 
   mutate(sex = case_when(
     sex == 1 ~ "Male", 
     sex == 0 ~ "Female"
@@ -270,16 +267,16 @@ baseline_df <- read_csv("data_mci/MCI_baseline.csv", skip = 1) |>
     apoe4 == 1 ~ "apoe4 carrier", 
     apoe4 == 0 ~ "apoe4 non-carrier"
   )) |> 
-  filter(current_age != age_at_onset)
+  filter(baseline_age != age_at_onset)
 ```
 
-*Discuss important steps in the import process and relevant features of the dataset.*
+**Discuss important steps in the import process and relevant features of the dataset.**
 
-_The import and cleaning of the `baseline_df` dataset involves changing all names to snake case using `clean_names()`, renaming the study participant identifier and primary key to `study_id` for joining to the `amyloid_df` dataset, replacing numerical indicators for `sex` to interpretable character values where `1`= `male` and `0`= `female`, and replacing numerical indicators for `apoe4` status so that `1`= `apoe4 carrier` and `0`= `apoe4 non-carrier`. Finally, the dataset was filtered to exclude participants who demonstrated MCI at baseline. One participant (study_id: 234) was excluded._
+_The import and cleaning of the `baseline_df` dataset involves changing all names to snake case using `clean_names()`, renaming the study participant identifier and primary key to `study_id` for joining to the `amyloid_df` dataset, renaming the age variable to `baseline_age` for clarity, replacing numerical indicators for `sex` to interpretable character values where `1`= `male` and `0`= `female`, and replacing numerical indicators for `apoe4` status so that `1`= `apoe4 carrier` and `0`= `apoe4 non-carrier`. Finally, the dataset was filtered to exclude participants who demonstrated MCI at baseline. One participant (study_id: 234) was excluded._
 
 _The imported baseline data included 483 observations, the cleaned baseline data has `r nrow(baseline_df)` observations._
 
-*How many participants were recruited, and of these how many develop MCI?* 
+**How many participants were recruited, and of these how many develop MCI?**
 
 _The study recruited 
 `r length(unique(as.character(baseline_df |>  pull(study_id))))` 
@@ -287,10 +284,10 @@ eligible participants. Of these,
 `r length(unique(as.character(baseline_df |> filter(age_at_onset != ".") |> pull(study_id))))` 
 participants developed MCI during the study observation period._
 
-*What is the average baseline age? What proportion of women in the study are APOE4 carriers?*
+**What is the average baseline age? What proportion of women in the study are APOE4 carriers?**
 
 _The average age of participants at baseline is 
-`r round(mean(baseline_df |> pull (current_age)), digit=2)` 
+`r round(mean(baseline_df |> pull (baseline_age)), digit=2)` 
 years. 
 The study included 
 `r length(unique(as.character(baseline_df |> filter(sex == "Female") |> pull(study_id))))` 
@@ -298,24 +295,59 @@ females, of which
 `r round(length(baseline_df |> filter(sex == "Female" & apoe4 == "apoe4 carrier") |> pull(apoe4))/length(unique(as.character(baseline_df |> filter(sex == "Female") |> pull(study_id))))* 100, digit = 2)`%
 were carriers for the APOE4 gene._
 
-Similarly, import, clean, and tidy the dataset of longitudinally observed biomarker values; comment on the steps on the import process and the features of the dataset.
-```{r}
+
+
+```{r clean_amyloid, message=FALSE, echo=TRUE}
 amyloid_df <- read_csv("data_mci/mci_amyloid.csv", skip = 1) |> 
   janitor::clean_names() 
 ```
 
 _The import and cleaning of the `amyloid_df` dataset involves changing all names to snake case using `clean_names()`. The imported amyloid data included 487 observations, the cleaned baseline data has `r nrow(amyloid_df)` observations with baseline, visit 2, visit 4, visit 6, and visit 8 measures of amyloid β 42/40 ratio._
 
-Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
 
-return all rows from x without a match in y...
-```{r}
-test<- anti_join(baseline_df, amyloid_df, by=c("study_id"))
 
-test2<- anti_join(amyloid_df, baseline_df, by=c("study_id"))
+**Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings.**
+
+The participants present in `baseline_df` but not the `amyloid_df` are the following `study_id`s: 
+```{r check_missing_baseline, message=FALSE, echo=TRUE}
+
+anti_join(baseline_df, amyloid_df, by=c("study_id")) |> 
+  select(study_id) |> 
+  print()
 
 ```
 
+_There are `r sum(!baseline_df$study_id %in% amyloid_df$study_id)` participants in `baseline_df` that do not have amyloid ratio data._
+
+
+The participants present in `amyloid_df` but not the `baseline_df` are the following `study_id`s: 
+```{r check_missing_amyloid, message=FALSE, echo=TRUE}
+
+anti_join(amyloid_df, baseline_df, by=c("study_id")) |> 
+  select(study_id) |> 
+  print()
+```
+
+_There are `r sum(!amyloid_df$study_id %in% baseline_df$study_id)` participants in `amyloid_df` that do not have baseline MCI data._
+
+
+
+Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, 
+```{r join_base_amyl, message=FALSE, echo=TRUE}
+
+baseline_amyloid_df <- merge(baseline_df, amyloid_df, by= c("study_id"), all=FALSE)
+```
+
+**Briefly describe the resulting dataset.**
+
+_The joined data set for eligible participants for whom both baseline MCI data and amyloid ratio data is available includes `r nrow(baseline_amyloid_df)` participants and `r ncol(baseline_amyloid_df)` variables. The variables include participant identifier (`study_id`), age at baseline (`baseline_age`), sex, years of education (`education`), APOE4 gene carrier status (`apoe4`), age at MCI onset (`age_at_onset`), and amyloid measures at baseline, and visits 2, 4, 6, and 8._
+
+
+**Export the result as a CSV to your data directory.**
+```{r, message=FALSE, echo=TRUE}
+write_csv(baseline_amyloid_df, "data_mci/baseline_amyloid_df.csv")
+
+```
 
 
 
