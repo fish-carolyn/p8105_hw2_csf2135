@@ -245,22 +245,20 @@ _The total weight of trash collected by Professor Trash Wheel was `r sum(filter(
 
 What was the total number of cigarette butts collected by Gwynnda in July of 2021?
 
-_In July of 2021. Gwynnda collected In July of 2021, Gwynnda collected `r as.integer(sum(filter(all_trash, dumpster_name == "Gwynnda Trash Wheel" & month == "July" & year == 2021)  |>  pull(cigarette_butts)))` cigarette butts._
+_In July of 2021. Gwynnda collected In July of 2021, Gwynnda collected `r as.integer(sum(filter(all_trash, dumpster_name == "Gwynnda Trash Wheel" & month == "July" & year == 2021)  |>  pull(cigarette_butts)))` cigarette butts.
 
 
 ## Problem 3
 
 This problem uses data collected in an observational study to understand the trajectory of Alzheimer’s disease (AD) biomarkers. Study participants were free of Mild Cognitive Impairment (MCI), a stage between the expected cognitive decline of normal aging and the more serious decline of dementia, at the study baseline.
 
-Basic demographic information were measured at the study baseline. The study monitored the development of MCI and recorded the age of MCI onset during the follow-up period, with the last visit marking the end of follow-up. APOE4 is a variant of the apolipoprotein E gene, significantly associated with a higher risk of developing Alzheimer’s disease. The amyloid β
- 42/40 ratio holds significant promise for diagnosing and predicting disease outcomes. This ratio undergoes changes over time and has been linked to the manifestation of clinical symptoms of Alzheimer’s disease.
+Basic demographic information were measured at the study baseline. The study monitored the development of MCI and recorded the age of MCI onset during the follow-up period, with the last visit marking the end of follow-up. APOE4 is a variant of the apolipoprotein E gene, significantly associated with a higher risk of developing Alzheimer’s disease. The amyloid β 42/40 ratio holds significant promise for diagnosing and predicting disease outcomes. This ratio undergoes changes over time and has been linked to the manifestation of clinical symptoms of Alzheimer’s disease.
 
 Import, clean, and tidy the dataset of baseline demographics. 
 
   * Ensure that sex and APOE4 carrier status are appropriate encoded (i.e. not numeric), 
   * and remove any participants who do not meet the stated inclusion criteria (i.e. no MCI at baseline). 
-```{r, message=FALSE}
-
+```{r clean_baseline, message=FALSE}
 baseline_df <- read_csv("data_mci/MCI_baseline.csv", skip = 1) |> 
   janitor::clean_names() |> 
   rename(study_id = id) |> 
@@ -275,7 +273,31 @@ baseline_df <- read_csv("data_mci/MCI_baseline.csv", skip = 1) |>
   filter(current_age != age_at_onset)
 ```
 
-Discuss important steps in the import process and relevant features of the dataset. How many participants were recruited, and of these how many develop MCI? What is the average baseline age? What proportion of women in the study are APOE4 carriers?
+Discuss important steps in the import process and relevant features of the dataset. 
+
+_The import and cleaning of the `baseline_df` dataset involves changing all names to snake case using `clean_names()`, renaming the study participant identifier and primary key to `study_id` for joining to the `amyloid_df` dataset, replacing numerical indicators for `sex` to interpretable character values where `1`= `male` and `0`= `female`, and replacing numerical indicators for `apoe4` status so that `1`= `apoe4 carrier` and `0`= `apoe4 non-carrier`. Finally, the dataset was filtered to exclude participants who demonstrated MCI at baseline. One participant (study_id: 234) was excluded._
+
+_The imported baseline data included 483 observations, the cleaned baseline data has `r nrow(baseline_df)` observations._
+
+How many participants were recruited, and of these how many develop MCI? 
+
+_The study recruited 
+`r length(unique(as.character(baseline_df |>  pull(study_id))))` 
+eligible participants. Of these, 
+`r length(unique(as.character(baseline_df |> filter(age_at_onset != ".") |> pull(study_id))))` 
+participants developed MCI during the study observation period._
+
+What is the average baseline age? What proportion of women in the study are APOE4 carriers?
+
+_The average age of participants at baseline is 
+`r round(mean(baseline_df |> pull (current_age)), digit=2)` 
+years. 
+The study included 
+`r length(unique(as.character(baseline_df |> filter(sex == "Female") |> pull(study_id))))` 
+females, of which 
+`r round(length(baseline_df |> filter(sex == "Female" & apoe4 == "apoe4 carrier") |> pull(apoe4))/length(unique(as.character(baseline_df |> filter(sex == "Female") |> pull(study_id))))* 100, digit = 2)`%
+were carriers for the APOE4 gene._
+
 
 Similarly, import, clean, and tidy the dataset of longitudinally observed biomarker values; comment on the steps on the import process and the features of the dataset.
 ```{r}
