@@ -20,7 +20,7 @@ First, clean the data in `pols-month.csv`.
   * replace month number with month name; 
   * create a president variable taking values gop and dem, and remove prez_dem and prez_gop; 
   * and remove the day variable.
-```{r, message=FALSE, echo=TRUE}
+```{r clean_538_my_way, message=FALSE, echo=TRUE}
 pols_month_df = read_csv("fivethirtyeight_datasets/pols-month.csv")
 
 pols_month_df = pols_month_df |> 
@@ -54,7 +54,7 @@ pols_month_df = pols_month_df |>
 ```
 
 Second, clean the data in `snp.csv` using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
-```{r, message=FALSE, echo=TRUE}
+```{r clean_snp_my_way, message=FALSE, echo=TRUE}
 snp_df = read_csv("fivethirtyeight_datasets/snp.csv")
 
 snp_df = snp_df |> 
@@ -86,7 +86,7 @@ snp_df = snp_df |>
 ```
 
 Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
-```{r, message=FALSE, echo=TRUE}
+```{r clean_unempl_my_way, message=FALSE, echo=TRUE}
 unemployment_df <- read_csv("fivethirtyeight_datasets/unemployment.csv", 
                             col_types = cols(Year = col_character()))
 
@@ -101,7 +101,7 @@ unemployment_df= unemployment_df |>
 ```
 
 Join the datasets by merging `snp` into `pols`, and merging `unemployment` into the result.
-```{r, message=FALSE, echo=TRUE}
+```{r merge_538_my_way, message=FALSE, echo=TRUE}
 joined_df= left_join(pols_month_df, snp_df, by=c("year", "month_abb")) |> 
   left_join(unemployment_df, by=c("year", "month_abb"))
 ```
@@ -116,7 +116,7 @@ _The final data set `joined_df` contains information about the number of politic
 
 We clean the 538 `pols` data, which provides information on the number of national politicians who are democratic or republican at any given time. There are some values for which `prez_gop` is `2` -- these are months in which Ford became President following Nixon's resignation. In the new `president` variable created as part of our data cleaning, we code these as `gop` (same as values when `prez_gop` is `1`).
 
-```{r clean_538_pols}
+```{r clean_538_key, message=FALSE, echo=TRUE}
 month_df = 
   tibble(
     month_num = 1:12,
@@ -135,7 +135,7 @@ pols =
 
 We also clean the 538 `snp` data, which contains information related to Standard & Poor’s stock market index.
 
-```{r clean_538_snp}
+```{r clean_snp_key, message=FALSE, echo=TRUE}
 snp = 
   read_csv("fivethirtyeight_datasets/snp.csv") |>
   separate(date, into = c("month", "day", "year"), convert = TRUE) |>
@@ -146,7 +146,7 @@ snp =
 
 Finally, we tidy the `unemployment` data so that it can be merged with the `pols` and `snp` datasets.
 
-```{r clean_538_unemp}
+```{r clean_unempl_key, message=FALSE, echo=TRUE}
 unemployment = 
   read_csv("fivethirtyeight_datasets/unemployment.csv") |>
   rename(year = Year) |>
@@ -161,7 +161,7 @@ unemployment =
 
 Now we merge the three datasets!
 
-```{r merge_538}
+```{r merge_538_snp_key, message=FALSE, results='hide', echo=TRUE}
 data_538 = 
   left_join(pols, snp) |>
   left_join(x = _, y = unemployment)
@@ -175,8 +175,6 @@ Let's talk about the 538 datasets. The `pols` data has `r nrow(pols)` observatio
 
 
 ## Problem 2
-This problem uses the Mr. Trash Wheel dataset, available as an Excel file on the course website.
-
 Read and clean the Mr. Trash Wheel sheet:
 
   * specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
@@ -235,8 +233,7 @@ all_trash <- all_trash |>
 
 ```
 
-
-Write a paragraph about these data; you are encouraged to use inline R. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. 
+Write a paragraph about these data. Be sure to note the number of observations in the resulting dataset, and give examples of key variables. 
 
 _The `all_trash` data set contains information about the types of trash collected, total weight of trash in tons collected (`weight_tons`), and an approximate value for number of homes powered by trash collection (`homes_powered`) for the trash wheels: `r unique(all_trash$dumpster_name)`. The dataset contains trash collection data for `r min(all_trash$date)` through `r max(all_trash$date)`. There are `r ncol(all_trash)` variables and `r nrow(all_trash)` observations._
 
@@ -244,11 +241,12 @@ _Note that plastic bag collection data is only reported for Gwynnda Trash Wheel.
 
 For available data, what was the total weight of trash collected by Professor Trash Wheel? 
 
-_The total weight of trash collected by Professor Trash Wheel was `r filter(all_trash, dumpster_name == "Prof. Trash Wheel") |> round(sum(weight_tons), digits =2)` tons._
+_The total weight of trash collected by Professor Trash Wheel was `r sum(filter(all_trash, dumpster_name == "Prof. Trash Wheel")  |>  pull(weight_tons)  |> round(digits = 2))` tons._
+
 
 What was the total number of cigarette butts collected by Gwynnda in July of 2021?
 
-_In July of 2021. Gwynnda collected `r filter(all_trash, dumpster_name == "Gwynnda Trash Wheel", month == "July", year == 2021) |> round(sum(cigarette_butts), digits =2)` cigarette butts._
+_In July of 2021. Gwynnda collected `r sum(filter(all_trash, dumpster_name == "Gwynnda Trash Wheel" & month == "July" & year == 2021)  |>  pull(cigarette_butts)  |>  round(digits = 2))` cigarette butts._
 
 
 ## Problem 3
